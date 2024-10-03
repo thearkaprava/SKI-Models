@@ -1,7 +1,7 @@
 <!-- # Fine-tuned CLIP models are efficient video learners [CVPR 2023] -->
-# $\pi$-CLIP: <u>P</u>ose <u>I</u>nduced CLIP for Zero-Shot Recognition of Activities of Daily Living
+# <u>SKI</u> Models: <u>SK</u>eleton <u>I</u>nduced Vision-Language Embeddings for Understanding Activities of Daily Living
 
-This is the implementation of '$\pi$-CLIP: <u>P</u>ose <u>I</u>nduced CLIP for Zero-Shot Recognition of Activities of Daily Living'.
+This is the official repository of 'SKI Models: SKeleton Induced Vision-Language Embeddings for Understanding Activities of Daily Living'.
 
 ## Installation
 This codebase is tested on Ubuntu 20.04.2 LTS with python 3.8. Follow the below steps to create environment and install dependencies.
@@ -9,9 +9,9 @@ This codebase is tested on Ubuntu 20.04.2 LTS with python 3.8. Follow the below 
 * Setup conda environment (recommended).
 ```bash
 # Create a conda environment
-conda create -y -n vclip python=3.7
+conda create -y -n ski_env python=3.7
 # Activate the environment
-conda activate vclip
+conda activate ski_env
 # Install requirements
 pip install -r requirements.txt
 ```
