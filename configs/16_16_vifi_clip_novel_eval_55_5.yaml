@@ -1,0 +1,31 @@
+DATA:
+    DATASET: ntu60
+    INPUT_SIZE: 224
+    LABEL_LIST: /data/asinha13/ntu/ntu60_cs_zero_shot_AS_2Nov23/zsl_55-5_novel_class_labels.csv #/data/ntu/ntu60_224x224_csvs/_LABEL_MAPPINGS/ntu60_label_mapping.csv
+    NUM_CLASSES: 5
+    NUM_FRAMES: 16
+    ROOT: /data/ntu/NTU60_224x224/rgb
+    TRAIN_FILE: /data/asinha13/ntu/ntu60_cs_zero_shot_AS_2Nov23/zsl_55-5_ntu60_base_train_data.csv #/data/ntu/csvs/ntu60_224x224/cross_subject/train.csv
+    VAL_FILE: /data/asinha13/ntu/ntu60_cs_zero_shot_AS_2Nov23/zsl_55-5_ntu60_novel_data.csv #/data/ntu/csvs/ntu60_224x224/cross_subject/test.csv
+
+SAVE_FREQ: 5 #20 #15
+MODEL:
+    ARCH: ViT-B/16
+    POSE_MODEL: 'trainers.Hyperformer.Hyperformer_Model'
+    GRAPH: 'graph.ntu_rgb_d.Graph'
+    # graph_args:
+    LABELING_MODE: 'spatial'
+    JOINT_LABEL: [0, 4, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 3, 3, 3, 2, 3, 3, 3, 1, 0, 1, 0, 1]
+
+TRAIN:
+    EPOCHS: 30 # change from 30
+    BATCH_SIZE: 4 # 4 # BS 512 (Effective BS=64)
+    ACCUMULATION_STEPS: 16 # 1 # for 8 gpus this should be 16
+    LR: 2.2e-05 #0.0025
+    WARMUP_EPOCHS: 10 #15
+TEST:
+    MULTI_VIEW_INFERENCE: False # By default in ViFi-Clip this is set to true
+TRAINER:
+  ViFi_CLIP:
+    ZS_EVAL: False # Make True only during test mode to evaluate zero-shot vanilla CLIP performance
+    USE: "both" # both refers to complete fine-tuning of CLIP (text+image encoders)
