@@ -26,11 +26,11 @@ def load_clip_to_cpu(cfg):
 
     except RuntimeError:
         state_dict = torch.load(model_path, map_location="cpu")
-    design_details = {"trainer": 'ViFi_CLIP',
-                      "vision_depth": cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_VISION,
-                      "language_depth": cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_TEXT,
-                      "vision_ctx": cfg.TRAINER.ViFi_CLIP.N_CTX_VISION,
-                      "language_ctx": cfg.TRAINER.ViFi_CLIP.N_CTX_TEXT}
+    design_details = {"trainer": 'SKI_VLM',
+                      "vision_depth": cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_VISION,
+                      "language_depth": cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_TEXT,
+                      "vision_ctx": cfg.TRAINER.SKI_VLM.N_CTX_VISION,
+                      "language_ctx": cfg.TRAINER.SKI_VLM.N_CTX_TEXT}
     model = clip.build_model(state_dict or model.state_dict(), design_details)
 
     return model
@@ -66,9 +66,9 @@ class VLPromptLearner(nn.Module):
     def __init__(self, cfg, classnames, clip_model, logger):
         super().__init__()
         dtype = clip_model.dtype
-        self.use_prompt_stage = cfg.TRAINER.ViFi_CLIP.PROMPT_MODEL
-        ctx_init = cfg.TRAINER.ViFi_CLIP.CTX_INIT
-        ZS_evaluation = cfg.TRAINER.ViFi_CLIP.ZS_EVAL
+        self.use_prompt_stage = cfg.TRAINER.SKI_VLM.PROMPT_MODEL
+        ctx_init = cfg.TRAINER.SKI_VLM.CTX_INIT
+        ZS_evaluation = cfg.TRAINER.SKI_VLM.ZS_EVAL
         if ZS_evaluation:
             text_aug = f"{{}}"
             tokenized_prompts = torch.cat([clip.tokenize(text_aug.format(c), context_length=77) for c in classnames])
@@ -78,10 +78,10 @@ class VLPromptLearner(nn.Module):
         elif self.use_prompt_stage:
             n_cls = len(classnames)
             # Make sure Language depth >= 1
-            assert cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_TEXT >= 1, "In VL prompting, Language prompt depth should be >=1" \
+            assert cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_TEXT >= 1, "In VL prompting, Language prompt depth should be >=1" \
                                                         "\nPlease use VPT trainer if you want to learn only vision " \
                                                         "branch  "
-            n_ctx = cfg.TRAINER.ViFi_CLIP.N_CTX_TEXT
+            n_ctx = cfg.TRAINER.SKI_VLM.N_CTX_TEXT
             ctx_dim = clip_model.ln_final.weight.shape[0]
 
             if ctx_init and (n_ctx) <= 4:
@@ -101,7 +101,7 @@ class VLPromptLearner(nn.Module):
             logger.info(f"V-L design")
             logger.info(f'Initial text context: "{prompt_prefix}"')
             logger.info(f"Number of context words (tokens) for Language prompting: {n_ctx}")
-            logger.info(f"Number of context words (tokens) for Vision prompting: {cfg.TRAINER.ViFi_CLIP.N_CTX_VISION}")
+            logger.info(f"Number of context words (tokens) for Vision prompting: {cfg.TRAINER.SKI_VLM.N_CTX_VISION}")
             self.ctx = nn.Parameter(ctx_vectors)
 
             classnames = [name.replace("_", " ") for name in classnames]
@@ -186,7 +186,7 @@ class ClipTextEncoder(nn.Module):
 
         return x
 
-class ViFiCLIP(nn.Module):
+class SKIViFiCLIP(nn.Module):
     def __init__(self, cfg, classnames, clip_model, clip_model2, logger, args=None):
         super().__init__()
         self.prompt_learner = VLPromptLearner(cfg, classnames, clip_model, logger)
@@ -196,12 +196,6 @@ class ViFiCLIP(nn.Module):
         self.clip_text_encoder = ClipTextEncoder(clip_model2)
         # self.logit_scale = clip_model.logit_scale
         self.dtype = clip_model.dtype
-
-        ## projection from 216 -> 512 (hyperformer latent dim is 216)
-        # self.pose_projection = torch.nn.Linear(216, 512)
-
-        ## Projection from 512+216 -> 512
-        # self.rgbpluspose_projection = torch.nn.Linear(512+216, 512)
 
         ## Loading hyperformer model
         ## In this class, we assume that if args is not passed then we will
@@ -245,12 +239,9 @@ class ViFiCLIP(nn.Module):
             clip_text_features = clip_text_features / clip_text_features.norm(dim=-1, keepdim=True)
             text_pose_logits = pose_embedding @ clip_text_features.t()
             
-
             return image_text_logits, text_pose_logits
-            # return text_features, pose_embedding
         else:
             return image_text_logits, image_text_logits
-            # return text_features
 
     @staticmethod
     def import_class(name):
@@ -261,56 +252,8 @@ class ViFiCLIP(nn.Module):
         return mod
 
     def load_model(self, args, cfg):
-        # output_device = args.device[0] if type(args.device) is list else args.device
-        # output_device = output_device
         Hyp_Model = self.import_class(cfg.MODEL.POSE_MODEL)
-        # Hyp_Model = Hyperformer.Hyperformer_Model()
-        # shutil.copy2(inspect.getfile(Hyp_Model), args.work_dir)
-        # print("HYPERFORMER", Hyp_Model)
         hyp_model = Hyp_Model(cfg)
-        # hyp_model = Hyp_Model()
-        # print(hyp_model)
-        # loss = nn.CrossEntropyLoss().cuda(output_device)
-        # loss = nn.CrossEntropyLoss().cuda() 
-        # print("WEIGHTS",  args.weights)
-
-        # hyp_model.load_state_dict(args.weights)
-
-        # if args.weights:
-        #     # global_step = int(args.weights[:-3].split('-')[-1])
-        #     print('##########\nLoad hyperformer weights from {}.\n##########'.format(args.weights))
-        #     if '.pkl' in args.weights:
-        #         with open(args.weights, 'r') as f:
-        #             weights = pickle.load(f)
-        #     if '.pth' in args. weights:
-        #         chkpnt = torch.load(args. weights, map_location='cpu')
-        #         weights = chkpnt['model']
-        #     else:
-        #         print("LOADING HYPERFORMER WEIGHTS!")
-        #         weights = torch.load(args.weights)
-
-        #     weights = OrderedDict([[k.split('module.')[-1], v.cuda()] for k, v in weights.items()])
-        #     # weights = OrderedDict([[k.split('module.')[-1], v.cuda(output_device)] for k, v in weights.items()])
-
-        #     keys = list(weights.keys())
-        #     # for w in self.args.ignore_weights:
-        #     #     for key in keys:
-        #     #         if w in key:
-        #     #             if weights.pop(key, None) is not None:
-        #     #                 self.print_log('Sucessfully Remove Weights: {}.'.format(key))
-        #     #             else:
-        #     #                 self.print_log('Can Not Remove Weights: {}.'.format(key))
-
-        #     try:
-        #         hyp_model.load_state_dict(weights, strict=False)
-        #     except:
-        #         state = hyp_model.state_dict()
-        #         diff = list(set(state.keys()).difference(set(weights.keys())))
-        #         print('Can not find these weights:')
-        #         for d in diff:
-        #             print('  ' + d)
-        #         state.update(weights)
-        #         hyp_model.load_state_dict(state, strict=False)
         return hyp_model
 
 def returnCLIP(config, logger=None,
@@ -319,10 +262,10 @@ def returnCLIP(config, logger=None,
     clip_model = load_clip_to_cpu(config)
     clip_model2 = load_clip_to_cpu(config)
 
-    logger.info("Building ViFi-CLIP CLIP")
-    model = ViFiCLIP(config, class_names, clip_model, clip_model2, logger, args)
+    logger.info("Building Model")
+    model = SKIViFiCLIP(config, class_names, clip_model, clip_model2, logger, args)
 
-    if config.TRAINER.ViFi_CLIP.PROMPT_MODEL:
+    if config.TRAINER.SKI_VLM.PROMPT_MODEL:
         logger.info("Turning off gradients in both the image and the text encoder")
         name_to_update = "prompt_learner"
         for name, param in model.named_parameters():
@@ -334,21 +277,21 @@ def returnCLIP(config, logger=None,
                     param.requires_grad_(False)
     else:
         # Now need to control freezing of CLIP for fine-tuning
-        train_complete_clip = config.TRAINER.ViFi_CLIP.USE
+        train_complete_clip = config.TRAINER.SKI_VLM.USE
         if train_complete_clip == "both":
-            logger.info("Turning on gradients for COMPLETE ViFi-CLIP model")
+            logger.info("Turning on gradients for COMPLETE SKI_VLM model")
             for name, param in model.named_parameters():
                 param.requires_grad_(True)
         else:
             if train_complete_clip == "image":
-                logger.info("Turning on gradients for image side the ViFi-CLIP model")
+                logger.info("Turning on gradients for image side the SKI_VLM model")
                 for name, param in model.named_parameters():
                     if "image_encoder" in name:  # replace by "text_encoder" incase you want to freeze text
                         param.requires_grad_(True)
                     else:
                         param.requires_grad_(False)
             else:
-                logger.info("Turning on gradients for TEXT side the ViFi-CLIP model")
+                logger.info("Turning on gradients for TEXT side the SKI_VLM model")
                 for name, param in model.named_parameters():
                     if "text_encoder" in name:  # replace by "text_encoder" incase you want to freeze text
                         param.requires_grad_(True)

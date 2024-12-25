@@ -20,6 +20,7 @@ _C.DATA.NUM_FRAMES = 8
 _C.DATA.NUM_CLASSES = 400
 _C.DATA.LABEL_LIST = 'labels/kinetics_400_labels.csv'
 _C.DATA.ASYNC_LOADING = False
+_C.DATA.SKELETON_DATA = ''
 
 # -----------------------------------------------------------------------------
 # Model settings
@@ -42,16 +43,16 @@ _C.MODEL.RESUME_POSE = None
 # Custom trainer settings
 # -----------------------------------------------------------------------------
 _C.TRAINER = CN()
-# Config for ViFi-CLIP
-_C.TRAINER.ViFi_CLIP = CN()
-_C.TRAINER.ViFi_CLIP.PROMPT_MODEL = False # second stage prompting?
-_C.TRAINER.ViFi_CLIP.N_CTX_VISION = 0  # number of context vectors at the vision branch
-_C.TRAINER.ViFi_CLIP.N_CTX_TEXT = 0  # number of context vectors at the language branch
-_C.TRAINER.ViFi_CLIP.CTX_INIT = "a photo of a"  # initialization words (only for language prompts)
-_C.TRAINER.ViFi_CLIP.PROMPT_DEPTH_VISION = 0  # max 12, min 0, for 0 it will act as shallow vision prompting (first layer)
-_C.TRAINER.ViFi_CLIP.PROMPT_DEPTH_TEXT = 1  # max 12, min 0, for 0 it will act as shallow language prompting (first layer)
-_C.TRAINER.ViFi_CLIP.USE = "both"  # fine-tuning complete CLIP model by default
-_C.TRAINER.ViFi_CLIP.ZS_EVAL = False  # make True only during test mode to evaluate zero-shot vanilla CLIP performance
+# Config for SKI-VLM
+_C.TRAINER.SKI_VLM = CN()
+_C.TRAINER.SKI_VLM.PROMPT_MODEL = False # second stage prompting?
+_C.TRAINER.SKI_VLM.N_CTX_VISION = 0  # number of context vectors at the vision branch
+_C.TRAINER.SKI_VLM.N_CTX_TEXT = 0  # number of context vectors at the language branch
+_C.TRAINER.SKI_VLM.CTX_INIT = "a photo of a"  # initialization words (only for language prompts)
+_C.TRAINER.SKI_VLM.PROMPT_DEPTH_VISION = 0  # max 12, min 0, for 0 it will act as shallow vision prompting (first layer)
+_C.TRAINER.SKI_VLM.PROMPT_DEPTH_TEXT = 1  # max 12, min 0, for 0 it will act as shallow language prompting (first layer)
+_C.TRAINER.SKI_VLM.USE = "both"  # fine-tuning complete VLM model by default
+_C.TRAINER.SKI_VLM.ZS_EVAL = False  # make True only during test mode to evaluate zero-shot vanilla VLM performance
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------
@@ -68,8 +69,8 @@ _C.TRAIN.OPT_LEVEL = 'O1'
 _C.TRAIN.AUTO_RESUME = False
 _C.TRAIN.USE_CHECKPOINT = False
 
-_C.TRAIN.LOSS_SCALE = 0.1 # 0.35
-_C.TRAIN.CLIP_GRAD = 10.0
+_C.TRAIN.LOSS_SCALE = 0.1 #0.35
+_C.TRAIN.CLIP_GRAD = 1.0
 
 # -----------------------------------------------------------------------------
 # Augmentation settings

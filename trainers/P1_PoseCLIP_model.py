@@ -26,11 +26,11 @@ def load_clip_to_cpu(cfg):
 
     except RuntimeError:
         state_dict = torch.load(model_path, map_location="cpu")
-    design_details = {"trainer": 'ViFi_CLIP',
-                      "vision_depth": cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_VISION,
-                      "language_depth": cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_TEXT,
-                      "vision_ctx": cfg.TRAINER.ViFi_CLIP.N_CTX_VISION,
-                      "language_ctx": cfg.TRAINER.ViFi_CLIP.N_CTX_TEXT}
+    design_details = {"trainer": 'SKI_VLM',
+                      "vision_depth": cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_VISION,
+                      "language_depth": cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_TEXT,
+                      "vision_ctx": cfg.TRAINER.SKI_VLM.N_CTX_VISION,
+                      "language_ctx": cfg.TRAINER.SKI_VLM.N_CTX_TEXT}
     model = clip.build_model(state_dict or model.state_dict(), design_details)
 
     return model
@@ -66,9 +66,9 @@ class VLPromptLearner(nn.Module):
     def __init__(self, cfg, classnames, clip_model, logger):
         super().__init__()
         dtype = clip_model.dtype
-        self.use_prompt_stage = cfg.TRAINER.ViFi_CLIP.PROMPT_MODEL
-        ctx_init = cfg.TRAINER.ViFi_CLIP.CTX_INIT
-        ZS_evaluation = cfg.TRAINER.ViFi_CLIP.ZS_EVAL
+        self.use_prompt_stage = cfg.TRAINER.SKI_VLM.PROMPT_MODEL
+        ctx_init = cfg.TRAINER.SKI_VLM.CTX_INIT
+        ZS_evaluation = cfg.TRAINER.SKI_VLM.ZS_EVAL
         if ZS_evaluation:
 
             text_aug = f"{{}}"
@@ -80,10 +80,10 @@ class VLPromptLearner(nn.Module):
 
             n_cls = len(classnames)
             # Make sure Language depth >= 1
-            assert cfg.TRAINER.ViFi_CLIP.PROMPT_DEPTH_TEXT >= 1, "In VL prompting, Language prompt depth should be >=1" \
+            assert cfg.TRAINER.SKI_VLM.PROMPT_DEPTH_TEXT >= 1, "In VL prompting, Language prompt depth should be >=1" \
                                                         "\nPlease use VPT trainer if you want to learn only vision " \
                                                         "branch  "
-            n_ctx = cfg.TRAINER.ViFi_CLIP.N_CTX_TEXT
+            n_ctx = cfg.TRAINER.SKI_VLM.N_CTX_TEXT
             ctx_dim = clip_model.ln_final.weight.shape[0]
 
             if ctx_init and (n_ctx) <= 4:
@@ -103,7 +103,7 @@ class VLPromptLearner(nn.Module):
             logger.info(f"V-L design")
             logger.info(f'Initial text context: "{prompt_prefix}"')
             logger.info(f"Number of context words (tokens) for Language prompting: {n_ctx}")
-            logger.info(f"Number of context words (tokens) for Vision prompting: {cfg.TRAINER.ViFi_CLIP.N_CTX_VISION}")
+            logger.info(f"Number of context words (tokens) for Vision prompting: {cfg.TRAINER.SKI_VLM.N_CTX_VISION}")
             self.ctx = nn.Parameter(ctx_vectors)
 
             classnames = [name.replace("_", " ") for name in classnames]
@@ -170,7 +170,7 @@ class VLPromptLearner(nn.Module):
         return prompts
 
 
-class ViFiCLIP(nn.Module):
+class SKCLIP(nn.Module):
     def __init__(self, cfg, classnames, clip_model, logger, args=None):
         super().__init__()
         self.prompt_learner = VLPromptLearner(cfg, classnames, clip_model, logger)
@@ -299,10 +299,10 @@ def returnCLIP(config, logger=None,
     logger.info(f"Loading CLIP (backbone: {config.MODEL.ARCH})")
     clip_model = load_clip_to_cpu(config)
 
-    logger.info("Building ViFi-CLIP CLIP")
-    model = ViFiCLIP(config, class_names, clip_model, logger, args)
+    logger.info("Building Model")
+    model = SKCLIP(config, class_names, clip_model, logger, args)
 
-    if config.TRAINER.ViFi_CLIP.PROMPT_MODEL:
+    if config.TRAINER.SKI_VLM.PROMPT_MODEL:
         logger.info("Turning off gradients in both the image and the text encoder")
         name_to_update = "prompt_learner"
         for name, param in model.named_parameters():
@@ -314,21 +314,21 @@ def returnCLIP(config, logger=None,
                     param.requires_grad_(False)
     else:
         # Now need to control freezing of CLIP for fine-tuning
-        train_complete_clip = config.TRAINER.ViFi_CLIP.USE
+        train_complete_clip = config.TRAINER.SKI_VLM.USE
         if train_complete_clip == "both":
-            logger.info("Turning on gradients for COMPLETE ViFi-CLIP model")
+            logger.info("Turning on gradients for COMPLETE SKI_VLM model")
             for name, param in model.named_parameters():
                 param.requires_grad_(True)
         else:
             if train_complete_clip == "image":
-                logger.info("Turning on gradients for image side the ViFi-CLIP model")
+                logger.info("Turning on gradients for image side the SKI_VLM model")
                 for name, param in model.named_parameters():
                     if "image_encoder" in name:  # replace by "text_encoder" incase you want to freeze text
                         param.requires_grad_(True)
                     else:
                         param.requires_grad_(False)
             else:
-                logger.info("Turning on gradients for TEXT side the ViFi-CLIP model")
+                logger.info("Turning on gradients for TEXT side the SKI_VLM model")
                 for name, param in model.named_parameters():
                     if "text_encoder" in name:  # replace by "text_encoder" incase you want to freeze text
                         param.requires_grad_(True)
