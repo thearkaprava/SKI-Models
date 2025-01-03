@@ -4,7 +4,7 @@
 This is the official repository of 'SKI Models: SKeleton Induced Vision-Language Embeddings for Understanding Activities of Daily Living'.
 
 ## Installation
-This codebase is tested on Ubuntu 20.04.2 LTS with python 3.8. Follow the below steps to create environment and install dependencies.
+This codebase is tested on Ubuntu 20.04.2 LTS with python 3.8. Follow the below steps to create environment and install dependencies. 
 
 * Setup conda environment (recommended).
 ```bash
@@ -25,23 +25,29 @@ cd apex
 pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```
 
+# SKI-VLM
 
-# Training
-For all experiments shown in above tables, we provide config files in `configs` folder. For example, to train ViFi-CLIP (tunes both image and text encoder) on Kinetics-400, run the following command:
+## Data Preparation
+We use the datasets [NTU RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/), and [NTU RGB+D 120](https://rose1.ntu.edu.sg/dataset/actionRecognition/). The zero-shot train and test splits are provided in the [labels](labels/) directory. Based on the splits, create the train and test csv files in the following format: 
+
 ```
-python -m torch.distributed.launch --nproc_per_node=8 \
-main.py -cfg /PATH/TO/CONFIG --output /PATH/TO/OUTPUT
+path_to_video_1,path_to_video_1_skeleton,label_1
+path_to_video_2,path_to_video_2_skeleton,label_2
+...
+path_to_video_N,path_to_video_N_skeleton,label_N
 ```
 
-**Note:**
-- We recommend keeping the total batch size as mentioned in respective config files. Please use `--accumulation-steps` to maintain the total batch size. Specifically, here the effective total batch size is 8(`GPUs_NUM`) x 4(`TRAIN.BATCH_SIZE`) x 16(`TRAIN.ACCUMULATION_STEPS`) = 512.
-- After setting up the datasets as instructed [DATASETS.md](docs/DATASETS.md), only argument in the config file that should be specified is data path. All other settings in config files are pre-set.
-
-For detailed training instructions for all experimental setup, please refer to [TRAIN.md](docs/TRAIN.md).
-
-# Evaluating models
-To evaluate a model, please use a suitable config and corresponding model weights. For example, to evaluate ViFi-CLIP with 16 frames on Kinetics-400, run the command below:
+## Training
+For all experiments, we provide config files in [configs](configs/) directory. For example, to train SKI-VLM on NTU, after setting the paths in the config file and bash scripts, run the following commands:
 ```
-python -m torch.distributed.launch --nproc_per_node=8 main.py \
--cfg /PATH/TO/CONFIG --output /PATH/TO/OUTPUT \
---only_test --resume /PATH/TO/CKPT --opts TEST.NUM_CLIP 4 TEST.NUM_CROP 3
+bash scripts/train_p1_SkeletonCLIP.sh
+bash scripts/train_p2_SKIViFiCLIP.sh
+```
+
+## Evaluating models
+To evaluate a model, please use a suitable config and corresponding model weights and run the command below:
+```
+bash scripts/eval_SKIViFiCLIP.sh
+```
+
+# SKI-LVLM

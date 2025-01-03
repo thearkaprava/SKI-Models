@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Set environment variables if needed
-export CUDA_VISIBLE_DEVICES=4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 # Run the distributed training
 python -m torch.distributed.launch \
-    --master_port 29507 \
+    --master_port 29501 \
     --nproc_per_node=4 \
     P2_SKIVLM_main.py \
     -cfg ./configs/16_16_skivlm_base_train_48_12.yaml \
