@@ -3,6 +3,11 @@
 
 This is the official repository of 'SKI Models: SKeleton Induced Vision-Language Embeddings for Understanding Activities of Daily Living'.
 
+![skimodels_figure](docs/skimodels_figure.png)
+
+> **<p align="justify"> Abstract:** *The introduction of vision-language models like CLIP has enabled the development of foundational video models capable of generalizing to unseen videos and human actions. However, these models are typically trained on web videos, which often fail to capture the challenges present in Activities of Daily Living (ADL) videos. Existing works address ADL-specific challenges, such as similar appearances, subtle motion patterns, and multiple viewpoints, by combining 3D skeletons and RGB videos. However, these approaches are not integrated with language, limiting their ability to generalize to unseen action classes.* <br>
+> *In this paper, we introduce <b>SKI models</b>, which integrate 3D skeletons into the vision-language embedding space. SKI models leverage a skeleton-language model, <b>SkeletonCLIP</b>, to infuse skeleton information into Vision Language Models (VLMs) and Large Vision Language Models (LVLMs) through collaborative training. Notably, SKI models do not require skeleton data during inference, enhancing their robustness for real-world applications. The effectiveness of SKI models is validated on three popular ADL datasets for zero-shot action recognition and video caption generation tasks.* </p>
+
 ## Installation
 This codebase is tested on Ubuntu 20.04.2 LTS with python 3.8. Follow the below steps to create environment and install dependencies. 
 
