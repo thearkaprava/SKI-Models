@@ -7,7 +7,7 @@ export CUDA_VISIBLE_DEVICES=4,5,6,7
 python -m torch.distributed.launch \
     --master_port 29507 \
     --nproc_per_node=4 \
-    CL_main_v2.py \
+    P2_SKIVLM_main.py \
     -cfg ./configs/16_16_skivlm_base_train_48_12.yaml \
     --output ./workdirs/TEST_P2_SKIViFiCLIP_zs_48_25Dec24/ \
     --resume ./workdirs/TEST_P1_SKeletonCLIP_alltrn_HFinit_zs_48_17Dec24/ckpt_epoch_0.pth \
