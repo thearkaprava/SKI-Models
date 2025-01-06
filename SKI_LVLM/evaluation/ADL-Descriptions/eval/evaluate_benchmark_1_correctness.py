@@ -1,9 +1,11 @@
+import openai
 import os
 import argparse
 import json
 import ast
 from multiprocessing.pool import Pool
 import ollama
+from tqdm import tqdm
 
 
 def parse_args():
@@ -11,9 +13,9 @@ def parse_args():
     parser.add_argument("--pred_path", required=True, help="The path to file containing prediction.")
     parser.add_argument("--output_dir", required=True, help="The path to save annotation json files.")
     parser.add_argument("--output_json", required=True, help="The path to save annotation final combined json file.")
+    parser.add_argument("--api_key", required=False, help="OpenAI API key.")
     parser.add_argument("--num_tasks", required=True, type=int, help="Number of splits.")
     args = parser.parse_args()
-    
     return args
 
 
@@ -29,6 +31,9 @@ def annotate(prediction_set, caption_files, output_dir):
         answer = qa_set['a']
         pred = qa_set['pred']
         try:
+            # Compute the correctness score
+            # completion = openai.ChatCompletion.create(
+            #     model="gpt-3.5-turbo",
             completion = ollama.chat(
                 model = 'llama3.1',
                 messages=[
@@ -58,18 +63,9 @@ def annotate(prediction_set, caption_files, output_dir):
                     }
                 ]
             )
+            # Convert response to a Python dictionary.
+            # response_message = completion["choices"][0]["message"]["content"]
             response_message = completion["message"]["content"]
-
-            print('================Question================')
-            print(question)
-            print('===============Pred Answer==============')
-            print(pred)
-            print('===============True Answer==============')
-            print(answer)
-            print('===============LLM Output===============')
-            print(response_message)
-            print('========================================')
-
             response_dict = ast.literal_eval(response_message)
             result_qa_pair = [response_dict, qa_set]
 
@@ -128,6 +124,7 @@ def main():
         prediction_set[id] = qa_set
 
     # Set the OpenAI API key.
+    openai.api_key = args.api_key
     num_tasks = args.num_tasks
 
     # While loop to ensure that all captions are processed.
@@ -164,23 +161,16 @@ def main():
     json_path = args.output_json
 
     # Iterate through json files
-    too_long = 0
     for file_name in os.listdir(output_dir):
         if file_name.endswith(".json"):
             file_path = os.path.join(output_dir, file_name)
             with open(file_path, "r") as json_file:
                 content = json.load(json_file)
-                
-                # if len(content[1]['pred']) > 2500:
-                #     too_long += 1
-                #     print(f"Answer too long. Skipped {too_long} files so far.")
-                #     continue
-
                 combined_contents[file_name[:-5]] = content
 
     # Write combined content to a json file
     with open(json_path, "w") as json_file:
-        json.dump(combined_contents, json_file, indent=4)
+        json.dump(combined_contents, json_file)
     print("All evaluation completed!")
 
     # Calculate average score
@@ -193,23 +183,8 @@ def main():
         score_sum += score
     average_score = score_sum / count
 
-    print("Average score for correctness: ", average_score)
-    print("Score to report: ", average_score*20) # Raj: multiply by 20 to get score in paper
+    print("Average score for correctness:", average_score*20)
 
-    # Threshold based metric
-    threshold = 2 # anything equal or greater than threshold is considered correct
-    count_above_threshold = 0
-    total = 0
-
-    for key, result in combined_contents.items():
-        total += 1
-        score_match = result[0]['score']
-        score = int(score_match)
-
-        if score >= threshold:
-            count_above_threshold += 1
-
-    print("Threshold based metric: ", round(count_above_threshold/total, 4))
 
 if __name__ == "__main__":
     main()
