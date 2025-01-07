@@ -43,16 +43,15 @@ class VisionConfig:
         self.pose_end_token = None
         self.pose_patch_token = None
 
+class SKILVLMConfig(LlamaConfig):
+    model_type = "SKILVLM"
 
-class LLAVIDALConfig(LlamaConfig):
-    model_type = "LLAVIDAL"
 
-
-class LLAVIDALLlamaModel(LlamaModel):
-    config_class = LLAVIDALConfig
+class SKILVLMLlamaModel(LlamaModel):
+    config_class = SKILVLMConfig
 
     def __init__(self, config: LlamaConfig, modality_args, mm_vision_tower=None, mm_hidden_size=None):  # TODO: Remove unused params
-        super(LLAVIDALLlamaModel, self).__init__(config)
+        super(SKILVLMLlamaModel, self).__init__(config)
 
         if hasattr(config, "mm_vision_tower"):
             self.vision_config = VisionConfig()
@@ -280,7 +279,7 @@ class LLAVIDALLlamaModel(LlamaModel):
 
             inputs_embeds = torch.stack(new_input_embeds, dim=0)
         
-        return super(LLAVIDALLlamaModel, self).forward(
+        return super(SKILVLMLlamaModel, self).forward(
             input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,
             inputs_embeds=inputs_embeds, use_cache=use_cache,
             output_attentions=output_attentions, output_hidden_states=output_hidden_states,
@@ -288,12 +287,12 @@ class LLAVIDALLlamaModel(LlamaModel):
         )
 
 
-class LLAVIDALLlamaForCausalLM(LlamaForCausalLM):
-    config_class = LLAVIDALConfig
+class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
+    config_class = SKILVLMConfig
 
     def __init__(self, config, model_args=None):
         super(LlamaForCausalLM, self).__init__(config)
-        self.model = LLAVIDALLlamaModel(config, modality_args=model_args)
+        self.model = SKILVLMLlamaModel(config, modality_args=model_args)
 
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
@@ -485,5 +484,5 @@ class LLAVIDALLlamaForCausalLM(LlamaForCausalLM):
         # print(tokenizer.convert_tokens_to_ids([DEFAULT_VIDEO_PATCH_TOKEN, DEFAULT_OBJECT_PATCH_TOKEN, DEFAULT_POSE_PATCH_TOKEN, DEFAULT_VID_START_TOKEN, DEFAULT_VID_END_TOKEN, DEFAULT_OBJECT_START_TOKEN, DEFAULT_OBJECT_END_TOKEN, DEFAULT_POSE_START_TOKEN, DEFAULT_POSE_END_TOKEN]))
 
 
-AutoConfig.register("LLAVIDAL", LLAVIDALConfig)
-AutoModelForCausalLM.register(LLAVIDALConfig, LLAVIDALLlamaForCausalLM)
+AutoConfig.register("SKILVLM", SKILVLMConfig)
+AutoModelForCausalLM.register(SKILVLMConfig, SKILVLMLlamaForCausalLM)

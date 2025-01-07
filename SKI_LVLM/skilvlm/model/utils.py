@@ -1,5 +1,5 @@
 import torch
-from llavidal.model import *
+from skilvlm.model import *
 from transformers import StoppingCriteria
 
 

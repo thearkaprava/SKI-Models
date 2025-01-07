@@ -7,11 +7,11 @@ from typing import Dict, Optional, Sequence
 import torch
 import transformers
 from torch.utils.data import Dataset
-from llavidal.train.llava_trainer import LlavidalTrainer
-from llavidal import video_conversation as conversation_lib
-from llavidal.model import *
+from skilvlm.train.llava_trainer import SKILVLMTrainer
+from skilvlm import video_conversation as conversation_lib
+from skilvlm.model import *
 import torch.distributed as dist
-from llavidal.constants import *
+from skilvlm.constants import *
 import pickle
 import numpy as np
 import os
@@ -46,7 +46,7 @@ class DataArguments:
     frame_aspect_ratio: str = 'square'
 
 @dataclass
-class LLAVIDALArguments:
+class SKILVLMArguments:
     object_folder: Optional[str] = field(default=None)
     pose_folder: Optional[str] = field(default=None)
     video_mask_prob: float = field(default=0.0)
@@ -566,7 +566,7 @@ class DataCollatorForSupervisedDataset(object):
             object_features = [instance['object'] for instance in instances if 'object' in instance]
             
             # Pad the object features to the same length when videos have varying numbers of objects being tracked
-            # NOTE: the padded features should not be used as input to the model, they should be spliced off in llavidal_pose_object
+            # NOTE: the padded features should not be used as input to the model, they should be spliced off in skilvlm_pose_object
             # before being passed to the model. This is only so we can batch the data.
             if object_features:
                 batch['object_features'] = torch.nn.utils.rnn.pad_sequence(object_features, batch_first=True, padding_value=self.tokenizer.pad_token_id)
@@ -586,7 +586,7 @@ class DataCollatorForSupervisedDataset(object):
 
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args,
-                                llavidal_args) -> Dict:
+                                skilvlm_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
     dataset_cls = (LazySupervisedDataset
                    if data_args.lazy_preprocess else SupervisedDataset)
@@ -597,14 +597,14 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                     sep_video_conv_front=data_args.sep_video_conv_front,
                                     video_token_len=data_args.video_token_len,
                                     video_folder=data_args.video_folder,
-                                    object_folder=llavidal_args.object_folder,
-                                    pose_folder=llavidal_args.pose_folder,  # Pass the pose folder here
+                                    object_folder=skilvlm_args.object_folder,
+                                    pose_folder=skilvlm_args.pose_folder,  # Pass the pose folder here
                                     frame_aspect_ratio=data_args.frame_aspect_ratio,
                                     use_vid_start_end=getattr(data_args, 'mm_use_vid_start_end', False),
                                     use_modality_string_prefix=getattr(data_args, 'use_modality_string_prefix', False),
-                                    modality_mask_probs=dict(video_mask_prob=llavidal_args.video_mask_prob,
-                                                             object_mask_prob=llavidal_args.object_mask_prob,
-                                                             pose_mask_prob=llavidal_args.pose_mask_prob)
+                                    modality_mask_probs=dict(video_mask_prob=skilvlm_args.video_mask_prob,
+                                                             object_mask_prob=skilvlm_args.object_mask_prob,
+                                                             pose_mask_prob=skilvlm_args.pose_mask_prob)
                                     ))
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(train_dataset=train_dataset,
@@ -614,24 +614,24 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
 
 def train():
     parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, LLAVIDALArguments))
-    model_args, data_args, training_args, llavidal_args = parser.parse_args_into_dataclasses()
+        (ModelArguments, DataArguments, TrainingArguments, SKILVLMArguments))
+    model_args, data_args, training_args, skilvlm_args = parser.parse_args_into_dataclasses()
 
     # multiline string
     print(f"""
     Modality Info:
     - Using Video: {data_args.video_folder is not None}
-    - Using Object: {llavidal_args.object_folder is not None}
-    - Using Pose: {llavidal_args.pose_folder is not None}\n\n
+    - Using Object: {skilvlm_args.object_folder is not None}
+    - Using Pose: {skilvlm_args.pose_folder is not None}\n\n
     """)
 
     modality_info = {
         'video': True if data_args.video_folder is not None else False,
-        'object': True if llavidal_args.object_folder is not None else False,
-        'pose': True if llavidal_args.pose_folder is not None else False,
+        'object': True if skilvlm_args.object_folder is not None else False,
+        'pose': True if skilvlm_args.pose_folder is not None else False,
     }
 
-    model = LLAVIDALLlamaForCausalLM.from_pretrained(
+    model = SKILVLMLlamaForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         model_args=modality_info,
@@ -717,7 +717,7 @@ def train():
 
             FSDP.__init__ = patch_FSDP_use_orig_params(FSDP.__init__)
 
-    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args, llavidal_args=llavidal_args) # this is the dataset
+    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args, skilvlm_args=skilvlm_args) # this is the dataset
     training_args.report_to = []
     # training_args.max_steps = 10
 
@@ -725,7 +725,7 @@ def train():
     trainable_params = [n for n, p in model.named_parameters() if p.requires_grad]
     logging.warning(f"!!! Make sure these are correct !!!\nTrainable Parameters: {trainable_params}")
 
-    trainer = LlavidalTrainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
+    trainer = SKILVLMTrainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)

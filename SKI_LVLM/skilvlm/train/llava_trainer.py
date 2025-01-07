@@ -19,7 +19,7 @@ def unwrap_model(model: nn.Module) -> nn.Module:
         return model
 
 
-class LlavidalTrainer(Trainer):
+class SKILVLMTrainer(Trainer):
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
@@ -46,4 +46,4 @@ class LlavidalTrainer(Trainer):
             else:
                 torch.save(weight_to_save, os.path.join(output_dir, f'mm_projector.bin'), )
 
-        # super(LLAVIDALTrainer, self)._save(output_dir, state_dict)
+        # super(SKILVLMTrainer, self)._save(output_dir, state_dict)

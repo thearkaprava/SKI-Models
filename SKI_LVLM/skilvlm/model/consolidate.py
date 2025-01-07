@@ -6,7 +6,7 @@ import argparse
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from llavidal.model import *
+from skilvlm.model import *
 
 
 def consolidate_ckpt(src_path, dst_path):

@@ -1,31 +1,8 @@
-"""
-How to run this file:
-
-cd LLAVIDAL
-python -m llavidal.single_video_inference \
-    --model-name <path of llava weights, for eg "LLaVA-7B-Lightening-v1-1"> \
-    --projection_path <path of projection for eg "llavidal-weights/llavidal-7B.bin"> \
-    --video_path <video_path>
-"""
-
-from llavidal.video_conversation import conv_templates, SeparatorStyle
-from llavidal.model.utils import KeywordsStoppingCriteria
+from skilvlm.video_conversation import conv_templates, SeparatorStyle
+from skilvlm.model.utils import KeywordsStoppingCriteria
 import torch
 
-#add new packages as below
-from PIL import Image
-from decord import VideoReader, cpu
-from llavidal.eval.model_utils import initialize_model, load_video
-import argparse
-import numpy as np
-import os
-
-# Define constants
-DEFAULT_VIDEO_TOKEN = "<video>"
-DEFAULT_VIDEO_PATCH_TOKEN = "<vid_patch>"
-DEFAULT_VID_START_TOKEN = "<vid_start>"
-DEFAULT_VID_END_TOKEN = "<vid_end>"
-
+from .constants import * # this is where modality start,end,and patch tokens are defined
 
 
 def get_spatio_temporal_features_torch(features):
@@ -41,7 +18,7 @@ def get_spatio_temporal_features_torch(features):
 
     # Extract the dimensions of the features
     t, s, c = features.shape
-    #breakpoint()
+
     # Compute temporal tokens as the mean along the time axis
     temporal_tokens = torch.mean(features, dim=1)
 
@@ -62,16 +39,16 @@ def get_spatio_temporal_features_torch(features):
     return concat_tokens
 
 
-def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, tokenizer, image_processor, video_token_len):
+def skilvlm_infer(video_frames, question, conv_mode, model, vision_tower, tokenizer, image_processor, video_token_len, max_new_tokens=1024):
     """
-    Run inference using the llavidal model.
+    Run inference using the skilvlm model.
 
     Parameters:
     sample : Initial sample
     video_frames (torch.Tensor): Video frames to process.
     question (str): The question string.
     conv_mode: Conversation mode.
-    model: The pretrained llavidal model.
+    model: The pretrained skilvlm model.
     vision_tower: Vision model to extract video features.
     tokenizer: Tokenizer for the model.
     image_processor: Image processor to preprocess video frames.
@@ -82,10 +59,17 @@ def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, token
     """
 
     # Prepare question string for the model
-    if model.get_model().vision_config.use_vid_start_end:
-        qs = question + '\n' + DEFAULT_VID_START_TOKEN + DEFAULT_VIDEO_PATCH_TOKEN * video_token_len + DEFAULT_VID_END_TOKEN
+    if model.get_model().vision_config.use_string_modality_prefix:
+        video_append = '\n' + DEFAULT_VIDEO_STRING_PREFIX
     else:
-        qs = question + '\n' + DEFAULT_VIDEO_PATCH_TOKEN * video_token_len
+        video_append = '\n'
+
+    if model.get_model().vision_config.use_vid_start_end:
+        video_append = video_append + DEFAULT_VID_START_TOKEN + DEFAULT_VIDEO_PATCH_TOKEN * video_token_len + DEFAULT_VID_END_TOKEN
+    else:
+        video_append = video_append + DEFAULT_VIDEO_PATCH_TOKEN * video_token_len
+
+    qs = question + video_append
 
     # Prepare conversation prompt
     conv = conv_templates[conv_mode].copy()
@@ -95,6 +79,9 @@ def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, token
 
     # Tokenize the prompt
     inputs = tokenizer([prompt])
+
+    # print('Prompt to LLM: ' + prompt)
+    # print(f'Token IDs: {inputs["input_ids"][0]}')
 
     # Preprocess video frames and get image tensor
     image_tensor = image_processor.preprocess(video_frames, return_tensors='pt')['pixel_values']
@@ -107,7 +94,7 @@ def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, token
         image_forward_outs = vision_tower(image_tensor, output_hidden_states=True)
         frame_features = image_forward_outs.hidden_states[-2][:, 1:] # Use second to last layer as in LLaVA
     video_spatio_temporal_features = get_spatio_temporal_features_torch(frame_features)
-    #breakpoint()
+
     # Move inputs to GPU
     input_ids = torch.as_tensor(inputs.input_ids).cuda()
 
@@ -121,8 +108,8 @@ def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, token
             input_ids,
             video_spatio_temporal_features=video_spatio_temporal_features.unsqueeze(0),
             do_sample=True,
-            temperature=0.5,
-            max_new_tokens=1024,
+            temperature=0.1,
+            max_new_tokens=max_new_tokens,
             stopping_criteria=[stopping_criteria])
 
     # Check if output is the same as input
@@ -137,41 +124,3 @@ def llavidal_infer(video_frames, question, conv_mode, model, vision_tower, token
     outputs = outputs.strip().rstrip(stop_str).strip()
 
     return outputs
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Demo")
-
-    parser.add_argument("--model-name", type=str, required=True)
-    parser.add_argument("--vision_tower_name", type=str, default="openai/clip-vit-large-patch14")
-    parser.add_argument("--projection_path", type=str, required=False, default="")
-    parser.add_argument("--video_path", type=str, required=True, default="")
-    parser.add_argument("--conv_mode", type=str, required=False, default='llavidal_v1')
-
-    args = parser.parse_args()
-
-    return args
-
-if __name__ == "__main__":
-    args = parse_args()
-
-
-    model, vision_tower, tokenizer, image_processor, video_token_len = \
-        initialize_model(args.model_name, args.projection_path)
-    #breakpoint()
-    video_path = args.video_path
-
-    if os.path.exists(video_path):
-        video_frames = load_video(video_path)
-    
-    question = input("Enter a question to check from the video:")
-    conv_mode = args.conv_mode
-
-    try:
-        # Run inference on the video and add the output to the list
-        output = llavidal_infer(video_frames, question, conv_mode, model, vision_tower,
-                                            tokenizer, image_processor, video_token_len)
-        print("\n\n", output)
-        
-    except Exception as e:
-        print(f"Error processing video file '{video_path}': {e}")

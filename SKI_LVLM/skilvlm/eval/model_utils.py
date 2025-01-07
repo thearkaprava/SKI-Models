@@ -1,7 +1,7 @@
 
-from llavidal.model import LLAVIDALLlamaForCausalLM
-from llavidal.utils import disable_torch_init
-from llavidal.constants import *
+from skilvlm.model import SKILVLMLlamaForCausalLM
+from skilvlm.utils import disable_torch_init
+from skilvlm.constants import *
 import os
 import numpy as np
 from PIL import Image
@@ -105,7 +105,7 @@ def initialize_model(model_name, projection_path=None, use_token_modality_prefix
     tokenizer = AutoTokenizer.from_pretrained('mmaaz60/LLaVA-7B-Lightening-v1-1')
 
     # Load model
-    model = LLAVIDALLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True, torch_dtype=torch.float16,
+    model = SKILVLMLlamaForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True, torch_dtype=torch.float16,
                                                          use_cache=True)
     
     hidden_size_video_encoder = 1024
@@ -198,7 +198,7 @@ def initialize_model(model_name, projection_path=None, use_token_modality_prefix
     #     print(f"Loading weights from {projection_path}")
     #     status = model.load_state_dict(torch.load(projection_path, map_location='cpu'), strict=False)
     #     if status.unexpected_keys:
-    #         print(f"Unexpected Keys: {status.unexpected_keys}.\nThe llavidal weights are not loaded correctly.")
+    #         print(f"Unexpected Keys: {status.unexpected_keys}.\nThe skilvlm weights are not loaded correctly.")
     #     print(f"Weights loaded from {projection_path}")
     # '''
     # End Manish's code from csgpu7

@@ -1,4 +1,4 @@
-from llavidal.eval.model_utils import load_video
+from skilvlm.eval.model_utils import load_video
 import dataclasses
 from enum import auto, Enum
 from typing import List
@@ -140,8 +140,8 @@ conv_vicuna_v1_1 = Conversation(
     sep2="</s>",
 )
 
-conv_llavidal_v1 = Conversation(
-    system="You are llavidal, a large vision-language assistant. "
+conv_skilvlm_v1 = Conversation(
+    system="You are skilvlm, a large vision-language assistant. "
            "You are able to understand the video content that the user provides, and assist the user with a variety of tasks using natural language."
            "Follow the instructions carefully and explain your answers in detail based on the provided video.",
     # system="",
@@ -157,7 +157,7 @@ conv_llavidal_v1 = Conversation(
 default_conversation = conv_v1_2
 conv_templates = {
     "default": conv_v1_2,
-    "llavidal_v1": conv_llavidal_v1,
+    "skilvlm_v1": conv_skilvlm_v1,
     "vicuna_v1_1": conv_vicuna_v1_1,
 }
 
