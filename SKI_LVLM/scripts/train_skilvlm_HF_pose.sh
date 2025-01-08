@@ -3,13 +3,13 @@
 # Exporting PYTHONPATH
 export PYTHONPATH="./:$PYTHONPATH"
 
-torchrun --nproc_per_node=4 --master_port 29001 llavidal/train/train_mem.py \
+torchrun --nproc_per_node=4 --master_port 29001 skilvlm/train/train_mem.py \
     --model_name_or_path /data/users/rchakra6/Video-ChatGPT/LLaVA-7B-Lightening-v1-1 \
     --version v1 \
     --data_path /data/vidlab_datasets/ntu_cogvlm_qa/ntu120_cogvlm_annotation_traindata_v2.json \
     --tune_mm_mlp_adapter True \
     --bf16 True \
-    --num_train_epochs 3 \
+    --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \

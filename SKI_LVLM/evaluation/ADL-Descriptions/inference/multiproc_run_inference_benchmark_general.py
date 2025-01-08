@@ -20,13 +20,13 @@ def parse_args():
     # Define the command-line arguments
     parser.add_argument('--num_processes', required=False, default=1, type=int)
     parser.add_argument('--videochatgpt-path', help='Directory where you cloned videochatgpt', required=True, default='/data/users/dreilly1/Video-ChatGPT/')
-    parser.add_argument('--video_dir', help='Directory containing video files.', required=False,default='/data/CHARADES/Charades_v1_480')
-    parser.add_argument('--gt_file', help='Path to the ground truth file.', required=False,default='/data/CHARADES/test_set_captions.json')
-    parser.add_argument('--output_dir', help='Directory to save the model results JSON.', required=False,default='/home/rchakra6/llavidal/ADLX_cropped_videos')
-    parser.add_argument('--output_name', help='Name of the file for storing results JSON.', required=False,default='charades_ADLX_cropped_videos')
+    parser.add_argument('--video_dir', help='Directory containing video files.', required=False,default='/data/vidlab_datasets/Charades/Charades_v1_480')
+    parser.add_argument('--gt_file', help='Path to the ground truth file.', required=False,default='/data/vidlab_datasets/CHARADES/test_set_captions.json')
+    parser.add_argument('--output_dir', help='Directory to save the model results JSON.', required=False,default='./work_dirs/')
+    parser.add_argument('--output_name', help='Name of the file for storing results JSON.', required=False,default='test1')
     parser.add_argument("--model-name", type=str, required=True)
-    parser.add_argument("--conv-mode", type=str, required=False, default='llavidal_v1')
-    parser.add_argument("--projection_path", type=str, required=True,default="/home/rchakra6/llavidal/ADLX_cropped_videos.bin")
+    parser.add_argument("--conv-mode", type=str, required=False, default='skilvlm_v1')
+    parser.add_argument("--projection_path", type=str, required=True,default="/data/users/asinha13/projects/home_dir/CLIP4ADL/SKI_Models/SKI_LVLM/work_dirs/LLAVIDAL_7B_1.1_Checkpoints_NTU_skilvlm_Pose_6Dec24/mm_projector.bin")
     parser.add_argument('--use-token-modality-prefix', help='Use token modality prefix.', action='store_true')
     parser.add_argument('--use-string-modality-prefix', help='Use string modality prefix.', action='store_true')
     parser.add_argument('--using-base-videochatgpt-weights', help='If passing base videochatgpt weights.', action='store_true')
@@ -64,7 +64,6 @@ def run_inference(process_id, args):
 
     video_formats = ['.mp4', '.avi', '.mov', '.mkv']
 
-    # Dominick: Why is this not used?
     fixed_question = "Please describe the primary actions and interactions in the video, focusing on movements and the use of objects by any person or persons present. Describe the sequence of events in detail but avoid mentioning clothing or background elements unless they are integral to the action being performed. The description should succinctly encapsulate the essence of the activity within the scene, aiming for a concise depiction in no more than 100 words. Focus on how the objects are being interacted with and any significant changes they undergo as a result of the actions taken. Describe the actions in details."
 
     if process_id == 0:
@@ -125,8 +124,8 @@ if __name__ == "__main__":
         from video_chatgpt.eval.model_utils import initialize_model, load_video
         from video_chatgpt.inference import video_chatgpt_infer as model_infer
     except ImportError as e:
-        from llavidal.eval.model_utils import initialize_model, load_video
-        from llavidal.inference import llavidal_infer as model_infer
+        from skilvlm.eval.model_utils import initialize_model, load_video
+        from skilvlm.inference import skilvlm_infer as model_infer
     
     if args.num_processes == 1:
         result = run_inference(0, args)

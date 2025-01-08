@@ -56,3 +56,7 @@ bash scripts/eval_SKIViFiCLIP.sh
 ```
 
 # SKI-LVLM
+For SKI-LVLM, we provide a script to evaluate the model on the Charades dataset. Please refer to the [SKI-LVLM README](SKI_LVLM/README.md) for more details.
+
+# Acknowledgements
+We sincerely thank the authors of [VideoChatGPT](https://github.com/THUwangcy/VideoChatGPT) and [LLAVIDAL](https://github.com/THUwangcy/LLAVIDAL) for providing the codebases.

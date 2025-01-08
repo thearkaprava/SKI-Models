@@ -3,7 +3,7 @@
 # Exporting PYTHONPATH
 export PYTHONPATH="./:$PYTHONPATH"
 
-torchrun --nproc_per_node=4 --master_port 29001 llavidal/train/train_mem.py \
+torchrun --nproc_per_node=4 --master_port 29001 skilvlm/train/train_mem.py \
     --model_name_or_path /data/users/rchakra6/Video-ChatGPT/LLaVA-7B-Lightening-v1-1 \
     --version v1 \
     --data_path /data/vidlab_datasets/ntu_cogvlm_qa/ntu120_cogvlm_annotation_traindata_v2.json \

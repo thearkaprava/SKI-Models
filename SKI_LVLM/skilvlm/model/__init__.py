@@ -1,2 +1,2 @@
 # Normal training
-from .llavidal import LLAVIDALLlamaForCausalLM, LLAVIDALConfig
+from .skilvlm import SKILVLMLlamaForCausalLM, SKILVLMConfig

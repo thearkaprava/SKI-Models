@@ -31,14 +31,14 @@ class VisionConfig:
         self.patch_size = 14
         self.hidden_size = 1024 # the shape of the features from the vision encoder
         self.hidden_size_pose = 216 # the shape of the features from the vision encoder
-        self.hidden_size_object= 512
+        # self.hidden_size_object= 512
         self.use_vid_start_end = None
         self.vid_start_token = None
         self.vid_end_token = None
         self.vid_patch_token = None
-        self.object_start_token = None
-        self.object_end_token = None
-        self.object_patch_token = None
+        # self.object_start_token = None
+        # self.object_end_token = None
+        # self.object_patch_token = None
         self.pose_start_token = None
         self.pose_end_token = None
         self.pose_patch_token = None
@@ -61,8 +61,8 @@ class SKILVLMLlamaModel(LlamaModel):
             if modality_args['video']:
                 self.mm_projector = nn.Linear(config.mm_hidden_size, config.hidden_size)
 
-            if modality_args['object']:
-                self.mm_projector_forobject = nn.Linear(self.vision_config.hidden_size_object, self.config.hidden_size)
+            # if modality_args['object']:
+            #     self.mm_projector_forobject = nn.Linear(self.vision_config.hidden_size_object, self.config.hidden_size)
 
             if modality_args['pose']:
                 self.mm_projector_forpose = nn.Linear(self.vision_config.hidden_size_pose, self.config.hidden_size)
@@ -84,9 +84,9 @@ class SKILVLMLlamaModel(LlamaModel):
                 if pretrain_mm_mlp_adapter is not None:
                     self.mm_projector.load_state_dict({k.split('.')[-1]: v for k, v in mm_projector_weights.items() if ('pose' not in k and 'object' not in k)})
 
-            if modalities_to_use['object']:
-                if pretrain_mm_mlp_adapter is not None:
-                    self.mm_projector_forobject.load_state_dict({k.split('.')[-1]: v for k, v in mm_projector_weights.items() if 'object' in k})
+            # if modalities_to_use['object']:
+            #     if pretrain_mm_mlp_adapter is not None:
+            #         self.mm_projector_forobject.load_state_dict({k.split('.')[-1]: v for k, v in mm_projector_weights.items() if 'object' in k})
 
             if modalities_to_use['pose']:
                 if pretrain_mm_mlp_adapter is not None:
@@ -108,7 +108,7 @@ class SKILVLMLlamaModel(LlamaModel):
             output_hidden_states: Optional[bool] = None,
             video_spatio_temporal_features: Optional[torch.FloatTensor] = None,
             pose_features: Optional[torch.FloatTensor] = None,
-            object_features:Optional[torch.FloatTensor] = None,
+            # object_features:Optional[torch.FloatTensor] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         # print('embed_tokens.weight.requires_grad = ', self.model.embed_tokens.weight.requires_grad)
@@ -125,8 +125,8 @@ class SKILVLMLlamaModel(LlamaModel):
             if video_spatio_temporal_features is not None:
                 video_features = self.mm_projector(video_spatio_temporal_features)
 
-            if object_features is not None:
-                object_features_projected = self.mm_projector_forobject(object_features)
+            # if object_features is not None:
+            #     object_features_projected = self.mm_projector_forobject(object_features)
 
             if pose_features is not None:
                 pose_features_projected = self.mm_projector_forpose(pose_features)
@@ -165,62 +165,62 @@ class SKILVLMLlamaModel(LlamaModel):
                     start_token_positions.append(video_start_token_pos)
                     end_token_positions.append(video_end_token_pos)
 
-                '''
-                Add object features
-                '''
-                if object_features is not None:
-                    cur_object_features = object_features_projected[cur_video_idx].to(device=cur_input_embeds.device)
-                    # cant rely on the first dimension to get number of objects, it could be padded
-                    num_object_patches = (cur_input_ids == self.vision_config.object_patch_token).sum().item()
-                    num_objects_for_sample = num_object_patches // 8
+                # '''
+                # Add object features
+                # '''
+                # if object_features is not None:
+                #     cur_object_features = object_features_projected[cur_video_idx].to(device=cur_input_embeds.device)
+                #     # cant rely on the first dimension to get number of objects, it could be padded
+                #     num_object_patches = (cur_input_ids == self.vision_config.object_patch_token).sum().item()
+                #     num_objects_for_sample = num_object_patches // 8
 
-                    if self.vision_config.use_vid_start_end:
-                        object_start_token_idx = torch.where(cur_input_ids == self.vision_config.object_start_token)[0].item()
-                        object_end_token_idx = torch.where(cur_input_ids == self.vision_config.object_end_token)[0].item()
-                    else:
-                        object_start_token_idx = torch.where(cur_input_ids == self.vision_config.object_patch_token)[0][0].item()
-                        object_end_token_idx = torch.where(cur_input_ids == self.vision_config.object_patch_token)[0][-1].item()
+                #     if self.vision_config.use_vid_start_end:
+                #         object_start_token_idx = torch.where(cur_input_ids == self.vision_config.object_start_token)[0].item()
+                #         object_end_token_idx = torch.where(cur_input_ids == self.vision_config.object_end_token)[0].item()
+                #     else:
+                #         object_start_token_idx = torch.where(cur_input_ids == self.vision_config.object_patch_token)[0][0].item()
+                #         object_end_token_idx = torch.where(cur_input_ids == self.vision_config.object_patch_token)[0][-1].item()
 
-                    # incase there are tokens between the end of the last modality and the start of the current modality
-                    # this happens when use_modality_string_prefix is True
-                    if len(start_token_positions) > 0 and object_start_token_idx - end_token_positions[-1] > 1:
-                        features_to_append.append(cur_input_embeds[end_token_positions[-1]+1:object_start_token_idx])
+                #     # incase there are tokens between the end of the last modality and the start of the current modality
+                #     # this happens when use_modality_string_prefix is True
+                #     if len(start_token_positions) > 0 and object_start_token_idx - end_token_positions[-1] > 1:
+                #         features_to_append.append(cur_input_embeds[end_token_positions[-1]+1:object_start_token_idx])
 
-                    start_token_positions.append(object_start_token_idx)
-                    end_token_positions.append(object_end_token_idx)
+                #     start_token_positions.append(object_start_token_idx)
+                #     end_token_positions.append(object_end_token_idx)
 
-                    # build object feature tensor
-                    object_embed = torch.empty(0, 4096)
+                #     # build object feature tensor
+                #     object_embed = torch.empty(0, 4096)
                     
-                    n = 0
-                    while n < num_objects_for_sample:
-                        if object_embed.nelement() == 0:
-                            if self.vision_config.use_vid_start_end: # add start token and features for 1st object
-                                object_embed = torch.cat((
-                                    cur_input_embeds[object_start_token_idx : object_start_token_idx + 1],
-                                    cur_object_features[n*8:(n+1)*8]
-                                ), dim=0)
-                            else: # add features for 1st object
-                                object_embed = cur_object_features[n*8:(n+1)*8]
-                        # add the rest of the object features
-                        else:
-                            object_embed = torch.cat((
-                                object_embed,
-                                cur_object_features[n*8:(n+1)*8]
-                            ), dim=0)
+                #     n = 0
+                #     while n < num_objects_for_sample:
+                #         if object_embed.nelement() == 0:
+                #             if self.vision_config.use_vid_start_end: # add start token and features for 1st object
+                #                 object_embed = torch.cat((
+                #                     cur_input_embeds[object_start_token_idx : object_start_token_idx + 1],
+                #                     cur_object_features[n*8:(n+1)*8]
+                #                 ), dim=0)
+                #             else: # add features for 1st object
+                #                 object_embed = cur_object_features[n*8:(n+1)*8]
+                #         # add the rest of the object features
+                #         else:
+                #             object_embed = torch.cat((
+                #                 object_embed,
+                #                 cur_object_features[n*8:(n+1)*8]
+                #             ), dim=0)
 
-                        n = n + 1
+                #         n = n + 1
 
-                    if self.vision_config.use_vid_start_end: # add object end token
-                        object_embed = torch.cat((
-                            object_embed,
-                            cur_input_embeds[object_end_token_idx: object_end_token_idx + 1]
-                        ), dim=0)
+                #     if self.vision_config.use_vid_start_end: # add object end token
+                #         object_embed = torch.cat((
+                #             object_embed,
+                #             cur_input_embeds[object_end_token_idx: object_end_token_idx + 1]
+                #         ), dim=0)
 
-                    object_embed = object_embed.to(cur_input_embeds.device)
+                #     object_embed = object_embed.to(cur_input_embeds.device)
 
-                    features_to_append.append(object_embed)
-                # breakpoint()
+                #     features_to_append.append(object_embed)
+                # # breakpoint()
                 '''
                 Add pose features
                 '''
@@ -313,7 +313,7 @@ class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             video_spatio_temporal_features: Optional[torch.FloatTensor] = None,
-            object_features: Optional[torch.FloatTensor] = None,
+            # object_features: Optional[torch.FloatTensor] = None,
             pose_features: Optional[torch.FloatTensor] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
@@ -334,7 +334,7 @@ class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             video_spatio_temporal_features=video_spatio_temporal_features,
-            object_features=object_features,
+            # object_features=object_features,
             pose_features=pose_features
         )
 
@@ -394,7 +394,7 @@ class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
                 "use_cache": kwargs.get("use_cache"),
                 "attention_mask": attention_mask,
                 "video_spatio_temporal_features": kwargs.get("video_spatio_temporal_features", None),
-                "object_features": kwargs.get("object_features", None),
+                # "object_features": kwargs.get("object_features", None),
                 "pose_features": kwargs.get("pose_features",None)
             }
         )
@@ -417,8 +417,8 @@ class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
 
             vision_config.vid_start_token, vision_config.vid_end_token = tokenizer.convert_tokens_to_ids(
                 [DEFAULT_VID_START_TOKEN, DEFAULT_VID_END_TOKEN])
-            vision_config.object_start_token, vision_config.object_end_token = tokenizer.convert_tokens_to_ids(
-                [DEFAULT_OBJECT_START_TOKEN, DEFAULT_OBJECT_END_TOKEN])
+            # vision_config.object_start_token, vision_config.object_end_token = tokenizer.convert_tokens_to_ids(
+            #     [DEFAULT_OBJECT_START_TOKEN, DEFAULT_OBJECT_END_TOKEN])
             vision_config.pose_start_token, vision_config.pose_end_token = tokenizer.convert_tokens_to_ids(
                 [DEFAULT_POSE_START_TOKEN, DEFAULT_POSE_END_TOKEN])
 
@@ -477,7 +477,7 @@ class SKILVLMLlamaForCausalLM(LlamaForCausalLM):
                     p.requires_grad = False
 
         vision_config.vid_patch_token = tokenizer.convert_tokens_to_ids([DEFAULT_VIDEO_PATCH_TOKEN])[0]
-        vision_config.object_patch_token = tokenizer.convert_tokens_to_ids([DEFAULT_OBJECT_PATCH_TOKEN])[0]
+        # vision_config.object_patch_token = tokenizer.convert_tokens_to_ids([DEFAULT_OBJECT_PATCH_TOKEN])[0]
         vision_config.pose_patch_token = tokenizer.convert_tokens_to_ids([DEFAULT_POSE_PATCH_TOKEN])[0]
 
         # print the ids of all new tokens

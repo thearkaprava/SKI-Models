@@ -50,7 +50,7 @@ class SKILVLMArguments:
     object_folder: Optional[str] = field(default=None)
     pose_folder: Optional[str] = field(default=None)
     video_mask_prob: float = field(default=0.0)
-    object_mask_prob: float = field(default=0.0)
+    # object_mask_prob: float = field(default=0.0)
     pose_mask_prob: float = field(default=0.0)
 
 
@@ -166,7 +166,7 @@ def preprocess_multimodal(
         multimodal_cfg: dict,
         cur_video_token_len: int,
         cur_pose_token_len: int, 
-        cur_object_token_len: int, 
+        # cur_object_token_len: int, 
 ) -> Dict:
     is_multimodal = multimodal_cfg['is_multimodal']
 
@@ -175,10 +175,10 @@ def preprocess_multimodal(
     
     video_token_len = cur_video_token_len
     pose_token_len = cur_pose_token_len
-    object_token_len = cur_object_token_len
+    # object_token_len = cur_object_token_len
     
     for source in sources:
-        if multimodal_cfg['sep_video_conv_front']: # Dominick: In default cfg this is false
+        if multimodal_cfg['sep_video_conv_front']: 
             raise NotImplementedError("Not implemented")
             assert DEFAULT_VIDEO_TOKEN in source[0]['value']
             source[0]['value'] = source[0]['value'].replace(DEFAULT_VIDEO_TOKEN, '').strip()
@@ -199,27 +199,27 @@ def preprocess_multimodal(
             else:
                 sentence["value"] = sentence["value"].replace(DEFAULT_VIDEO_TOKEN, '')
 
-        ## Adding object token patches
-        for sentence in source:
-            if cur_object_token_len > 0:
-                num_objects = object_token_len // 8 # 8 frames per object
-                replace_token = DEFAULT_OBJECT_PATCH_TOKEN * object_token_len
+        # ## Adding object token patches
+        # for sentence in source:
+        #     if cur_object_token_len > 0:
+        #         num_objects = object_token_len // 8 # 8 frames per object
+        #         replace_token = DEFAULT_OBJECT_PATCH_TOKEN * object_token_len
 
-                if multimodal_cfg['use_vid_start_end']: # are we using modality prefix?
-                    replace_token = DEFAULT_OBJECT_START_TOKEN + replace_token + DEFAULT_OBJECT_END_TOKEN
-                if multimodal_cfg['use_modality_string_prefix']:
-                    replace_token = DEFAULT_OBJECT_STRING_PREFIX + replace_token
+        #         if multimodal_cfg['use_vid_start_end']: # are we using modality prefix?
+        #             replace_token = DEFAULT_OBJECT_START_TOKEN + replace_token + DEFAULT_OBJECT_END_TOKEN
+        #         if multimodal_cfg['use_modality_string_prefix']:
+        #             replace_token = DEFAULT_OBJECT_STRING_PREFIX + replace_token
 
-                sentence["value"] = sentence["value"].replace(DEFAULT_OBJECT_TOKEN, replace_token)
-            else:
-                sentence["value"] = sentence["value"].replace(DEFAULT_OBJECT_TOKEN, '')
+        #         sentence["value"] = sentence["value"].replace(DEFAULT_OBJECT_TOKEN, replace_token)
+        #     else:
+        #         sentence["value"] = sentence["value"].replace(DEFAULT_OBJECT_TOKEN, '')
 
         ## Adding pose token patches
         for sentence in source:
             if cur_pose_token_len > 0:
                 replace_token = DEFAULT_POSE_PATCH_TOKEN * pose_token_len
 
-                if multimodal_cfg['use_vid_start_end']: # are we using modality prefix?
+                if multimodal_cfg['use_vid_start_end']: 
                     replace_token = DEFAULT_POSE_START_TOKEN + replace_token + DEFAULT_POSE_END_TOKEN
                 if multimodal_cfg['use_modality_string_prefix']:
                     replace_token = DEFAULT_POSE_STRING_PREFIX + replace_token
@@ -470,23 +470,23 @@ class LazySupervisedDataset(Dataset):
             if torch.rand(1) < mask_prob:
                 features = features * 0
         
-        # Load object features
-        object_folder = self.multimodal_cfg['object_folder']
-        if object_folder is not None and 'object' in sources[0]: # Assuming object data is present
-            object_file = self.list_data_dict[i]['object']
-            if os.path.exists(f"{object_folder}/{object_file}"):
-                with open(f"{object_folder}/{object_file}", "rb") as f:
-                    object_features = pickle.load(f)
-                    object_features = object_features.reshape(-1, 512)  # Reshape to [num_objects*8, 512] if it's not already
-                    object_features = torch.tensor(object_features, dtype=torch.float32)
-            else:
-                object_features = torch.zeros((8, 512), dtype=torch.float32)  # Create a zero tensor of shape [8, 512]
+        # # Load object features
+        # object_folder = self.multimodal_cfg['object_folder']
+        # if object_folder is not None and 'object' in sources[0]: # Assuming object data is present
+        #     object_file = self.list_data_dict[i]['object']
+        #     if os.path.exists(f"{object_folder}/{object_file}"):
+        #         with open(f"{object_folder}/{object_file}", "rb") as f:
+        #             object_features = pickle.load(f)
+        #             object_features = object_features.reshape(-1, 512)  # Reshape to [num_objects*8, 512] if it's not already
+        #             object_features = torch.tensor(object_features, dtype=torch.float32)
+        #     else:
+        #         object_features = torch.zeros((8, 512), dtype=torch.float32)  # Create a zero tensor of shape [8, 512]
 
-            cur_object_token_len = object_features.shape[0]
+        #     cur_object_token_len = object_features.shape[0]
 
-            mask_prob = self.multimodal_cfg['modality_mask_probs']['object_mask_prob']
-            if torch.rand(1) < mask_prob:
-                object_features = object_features * 0
+        #     mask_prob = self.multimodal_cfg['modality_mask_probs']['object_mask_prob']
+        #     if torch.rand(1) < mask_prob:
+        #         object_features = object_features * 0
     
         # Load pose features
         pose_folder = self.multimodal_cfg['pose_folder']
@@ -509,7 +509,7 @@ class LazySupervisedDataset(Dataset):
 
         sources = preprocess_multimodal(
             copy.deepcopy([e["conversations"] for e in sources]),
-            self.multimodal_cfg, cur_video_token_len, cur_pose_token_len, cur_object_token_len)
+            self.multimodal_cfg, cur_video_token_len, cur_pose_token_len) #, cur_object_token_len)
         
         data_dict = preprocess(
             sources,
@@ -522,8 +522,8 @@ class LazySupervisedDataset(Dataset):
         if video_folder is not None and 'video' in self.list_data_dict[i]:
             data_dict["video"] = features
         
-        if object_folder is not None and 'object' in self.list_data_dict[i]:
-            data_dict["object"] = object_features
+        # if object_folder is not None and 'object' in self.list_data_dict[i]:
+        #     data_dict["object"] = object_features
 
         if pose_folder is not None and 'pose' in self.list_data_dict[i]:
             data_dict["pose"] = pose_features
@@ -562,17 +562,17 @@ class DataCollatorForSupervisedDataset(object):
             else:
                 batch['video_spatio_temporal_features'] = features
 
-        if 'object' in instances[0]:
-            object_features = [instance['object'] for instance in instances if 'object' in instance]
+        # if 'object' in instances[0]:
+        #     object_features = [instance['object'] for instance in instances if 'object' in instance]
             
-            # Pad the object features to the same length when videos have varying numbers of objects being tracked
-            # NOTE: the padded features should not be used as input to the model, they should be spliced off in skilvlm_pose_object
-            # before being passed to the model. This is only so we can batch the data.
-            if object_features:
-                batch['object_features'] = torch.nn.utils.rnn.pad_sequence(object_features, batch_first=True, padding_value=self.tokenizer.pad_token_id)
-            else:
-                # If no valid object features are present, you might add a placeholder or handle it differently
-                logging.info("No valid object features found among the batch instances.")
+        #     # Pad the object features to the same length when videos have varying numbers of objects being tracked
+        #     # NOTE: the padded features should not be used as input to the model, they should be spliced off in skilvlm_pose_object
+        #     # before being passed to the model. This is only so we can batch the data.
+        #     if object_features:
+        #         batch['object_features'] = torch.nn.utils.rnn.pad_sequence(object_features, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+        #     else:
+        #         # If no valid object features are present, you might add a placeholder or handle it differently
+        #         logging.info("No valid object features found among the batch instances.")
 
         if 'pose' in instances[0]:
             pose_features = [instance['pose'] for instance in instances]
@@ -597,13 +597,13 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                     sep_video_conv_front=data_args.sep_video_conv_front,
                                     video_token_len=data_args.video_token_len,
                                     video_folder=data_args.video_folder,
-                                    object_folder=skilvlm_args.object_folder,
+                                    # object_folder=skilvlm_args.object_folder,
                                     pose_folder=skilvlm_args.pose_folder,  # Pass the pose folder here
                                     frame_aspect_ratio=data_args.frame_aspect_ratio,
                                     use_vid_start_end=getattr(data_args, 'mm_use_vid_start_end', False),
                                     use_modality_string_prefix=getattr(data_args, 'use_modality_string_prefix', False),
                                     modality_mask_probs=dict(video_mask_prob=skilvlm_args.video_mask_prob,
-                                                             object_mask_prob=skilvlm_args.object_mask_prob,
+                                                            #  object_mask_prob=skilvlm_args.object_mask_prob,
                                                              pose_mask_prob=skilvlm_args.pose_mask_prob)
                                     ))
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
@@ -621,13 +621,13 @@ def train():
     print(f"""
     Modality Info:
     - Using Video: {data_args.video_folder is not None}
-    - Using Object: {skilvlm_args.object_folder is not None}
+    # - Using Object: {skilvlm_args.object_folder is not None}
     - Using Pose: {skilvlm_args.pose_folder is not None}\n\n
     """)
 
     modality_info = {
         'video': True if data_args.video_folder is not None else False,
-        'object': True if skilvlm_args.object_folder is not None else False,
+        # 'object': True if skilvlm_args.object_folder is not None else False,
         'pose': True if skilvlm_args.pose_folder is not None else False,
     }
 
