@@ -20,7 +20,7 @@ from apex import amp
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from datasets.blending import CutmixMixupBlending
 from utils.config import get_config
-from trainers import CL_vificlip_pose_text_merged_model_AS_7Feb24 as skivlm 
+from trainers import P2_SKIVLM_model as skivlm 
 
 from torchlight import DictAction
 from collections import OrderedDict
