@@ -1,14 +1,15 @@
 DATA:
     DATASET: ntu120
     INPUT_SIZE: 224
-    LABEL_LIST: /path/to/base_class_labels.csv 
+    LABEL_LIST: /path/to/base_class_labels.csv
+    NUM_CLASSES: 110
     NUM_FRAMES: 16
     ROOT: /path/to/ntu/NTU120_224x224/rgb
     TRAIN_FILE: /path/to/ntu/zsl_110-10_ntu120_base_train_data.csv 
     VAL_FILE: /path/to/ntu/zsl_110-10_ntu120_base_val_data.csv 
     SKELETON_DATA: /path/to/ntu/processed_skeleton_data/NTU120_CS.npz
     
-SAVE_FREQ: 25 #15
+SAVE_FREQ: 1 
 MODEL:
     ARCH: ViT-B/16
     POSE_MODEL: 'trainers.Hyperformer.Hyperformer_Model'
@@ -18,11 +19,11 @@ MODEL:
     JOINT_LABEL: [0, 4, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 3, 3, 3, 2, 3, 3, 3, 1, 0, 1, 0, 1]
 
 TRAIN:
-    EPOCHS: 100 
+    EPOCHS: 2 
     BATCH_SIZE: 4 # BS 512 (Effective BS=64)
-    ACCUMULATION_STEPS: 16 # for 8 gpus this should be 16
+    ACCUMULATION_STEPS: 16  # for 8 gpus this should be 16
     LR: 2.2e-05 
-    WARMUP_EPOCHS: 5 
+    WARMUP_EPOCHS: 0 
 TEST:
     MULTI_VIEW_INFERENCE: False # By default in ViFi-Clip this is set to true
 TRAINER:
