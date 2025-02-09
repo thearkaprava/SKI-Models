@@ -1,6 +1,8 @@
 <!-- # Fine-tuned CLIP models are efficient video learners [CVPR 2023] -->
 # <u>SKI</u> Models: <u>SK</u>eleton <u>I</u>nduced Vision-Language Embeddings for Understanding Activities of Daily Living (AAAI 2025)
-
+<a href="https://arxiv.org/abs/2502.03459" target="_blank">
+        <img src="https://img.shields.io/badge/arXiv-2501.06138-B31B1B?style=flat-square" alt="arXiv">
+</a>
 This is the official repository of 'SKI Models: Skeleton Induced Vision-Language Embeddings for Understanding Activities of Daily Living' (AAAI 2025).
 
 ![skimodels_figure](docs/skimodels_figure.png)
