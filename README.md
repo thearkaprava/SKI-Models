@@ -62,7 +62,7 @@ bash scripts/eval_SKIViFiCLIP.sh
 For SKI-LVLM, we provide a script to evaluate the model on the Charades dataset. Please refer to the [SKI-LVLM README](SKI_LVLM/README.md) for more details.
 
 # Citation
-If you use our approach (code, model or dataset splits) in your research, please consider citing:
+If you use our approach (code or methods) in your research, please consider citing:
 ```
 @article{sinha2025ski,
   title={SKI Models: Skeleton Induced Vision-Language Embeddings for Understanding Activities of Daily Living},
